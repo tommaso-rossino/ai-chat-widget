@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tgz
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+examples/*/node_modules/
+examples/*/.next/
+examples/*/next-env.d.ts
