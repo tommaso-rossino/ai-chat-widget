@@ -6,7 +6,7 @@
  */
 .tr-chat-widget button:focus-visible,
 .tr-chat-widget textarea:focus-visible {
-  outline: 2px solid #1d4ed8;
+  outline: 2px solid var(--cw-accent, #2563eb);
   outline-offset: 2px;
 }
 

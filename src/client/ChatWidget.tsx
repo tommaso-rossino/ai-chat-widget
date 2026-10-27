@@ -1,5 +1,19 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { useChat } from './useChat';
+
+/** `CSSProperties` that also accepts CSS custom properties, e.g. `{ '--cw-accent': '#c8553d' }`. */
+export type ChatWidgetStyle = CSSProperties & { [key: `--${string}`]: string | number | undefined };
+
+export type ChatWidgetVariant = 'light' | 'dark';
 
 export interface ChatWidgetProps {
   /** URL that receives `POST { messages }` and answers with `{ reply }` JSON or an SSE stream. */
@@ -16,143 +30,213 @@ export interface ChatWidgetProps {
   onError?: (error: Error) => void;
   /** Open the panel on mount. */
   defaultOpen?: boolean;
+  /** Built-in palette used when a `--cw-*` property is not set. */
+  variant?: ChatWidgetVariant;
+  /** Extra class on the root element. Set `--cw-*` properties on it to theme the widget. */
+  className?: string;
+  /** Inline styles merged onto the root element. Accepts `--cw-*` properties. */
+  style?: ChatWidgetStyle;
+  /** Custom launcher icon, shown while the panel is closed. */
+  toggleIcon?: ReactNode;
 }
 
-const ACCENT = '#2563eb';
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
-const styles = {
-  root: {
-    position: 'fixed',
-    right: 20,
-    bottom: 20,
-    zIndex: 2147483000,
-    fontFamily: FONT,
-    fontSize: 14,
-    lineHeight: 1.45,
-    color: '#111827',
-    boxSizing: 'border-box',
-  },
-  toggle: {
-    width: 56,
-    height: 56,
-    borderRadius: '50%',
-    border: 'none',
-    background: ACCENT,
-    color: '#fff',
-    cursor: 'pointer',
-    boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 'auto',
-    padding: 0,
-  },
-  panel: {
-    width: 'min(370px, calc(100vw - 40px))',
-    height: 'min(540px, calc(100vh - 110px))',
-    marginBottom: 12,
-    background: '#fff',
-    borderRadius: 12,
-    boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
-    border: '1px solid #e5e7eb',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 14px',
-    background: ACCENT,
-    color: '#fff',
-  },
-  title: { margin: 0, fontSize: 15, fontWeight: 600 },
-  close: {
-    background: 'transparent',
-    border: 'none',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: 20,
-    lineHeight: 1,
-    padding: 4,
-  },
-  list: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: 14,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    background: '#f9fafb',
-    margin: 0,
-    listStyle: 'none',
-  },
-  bubble: {
-    maxWidth: '85%',
-    padding: '8px 12px',
-    borderRadius: 12,
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word',
-  },
-  user: { alignSelf: 'flex-end', background: ACCENT, color: '#fff', borderBottomRightRadius: 4 },
-  assistant: { alignSelf: 'flex-start', background: '#fff', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 },
-  status: { alignSelf: 'flex-start', color: '#6b7280', fontStyle: 'italic', padding: '0 4px' },
-  error: {
-    margin: '0 14px 8px',
-    padding: '8px 10px',
-    borderRadius: 8,
-    background: '#fef2f2',
-    color: '#b91c1c',
-    fontSize: 13,
-  },
-  form: { display: 'flex', gap: 8, padding: 10, borderTop: '1px solid #e5e7eb', background: '#fff' },
-  input: {
-    flex: 1,
-    resize: 'none',
-    border: '1px solid #d1d5db',
-    borderRadius: 8,
-    padding: '8px 10px',
-    font: 'inherit',
-    color: 'inherit',
-    background: '#fff',
-    minHeight: 38,
-    maxHeight: 120,
-    boxSizing: 'border-box',
-  },
-  send: {
-    border: 'none',
-    borderRadius: 8,
-    background: ACCENT,
-    color: '#fff',
-    padding: '0 14px',
-    font: 'inherit',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0,0,0,0)',
-    whiteSpace: 'nowrap',
-    border: 0,
-  },
-} satisfies Record<string, CSSProperties>;
+/** Fallback values for every `--cw-*` property. A property set by the consumer always wins. */
+const LIGHT = {
+  font: FONT,
+  text: '#111827',
+  muted: '#6b7280',
+  'panel-bg': '#ffffff',
+  'list-bg': '#f9fafb',
+  border: '#e5e7eb',
+  accent: '#2563eb',
+  'accent-contrast': '#ffffff',
+  'bubble-bg': '#ffffff',
+  'bubble-text': '#111827',
+  'input-bg': '#ffffff',
+  'input-border': '#d1d5db',
+  'error-bg': '#fef2f2',
+  'error-text': '#b91c1c',
+  shadow: '0 12px 40px rgba(0,0,0,0.18)',
+  'toggle-shadow': '0 6px 20px rgba(0,0,0,0.2)',
+  radius: '12px',
+  'radius-sm': '8px',
+};
+
+type Theme = typeof LIGHT;
+
+const DARK: Theme = {
+  ...LIGHT,
+  text: '#e5e0db',
+  muted: '#8a8580',
+  'panel-bg': '#0c0c0c',
+  'list-bg': '#0a0a0a',
+  border: 'rgba(255,255,255,0.08)',
+  'bubble-bg': 'rgba(255,255,255,0.04)',
+  'bubble-text': '#e5e0db',
+  'input-bg': 'rgba(255,255,255,0.03)',
+  'input-border': 'rgba(255,255,255,0.08)',
+  'error-bg': 'rgba(185,28,28,0.15)',
+  'error-text': '#fca5a5',
+};
+
+function createStyles(theme: Theme) {
+  const v = (name: keyof Theme) => `var(--cw-${name}, ${theme[name]})`;
+  const accent = v('accent');
+  const accentContrast = v('accent-contrast');
+  const border = `1px solid ${v('border')}`;
+
+  return {
+    root: {
+      position: 'fixed',
+      right: 20,
+      bottom: 20,
+      zIndex: 2147483000,
+      fontFamily: v('font'),
+      fontSize: 14,
+      lineHeight: 1.45,
+      color: v('text'),
+      boxSizing: 'border-box',
+    },
+    toggle: {
+      width: 56,
+      height: 56,
+      borderRadius: '50%',
+      border: 'none',
+      background: accent,
+      color: accentContrast,
+      cursor: 'pointer',
+      boxShadow: v('toggle-shadow'),
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 'auto',
+      padding: 0,
+    },
+    panel: {
+      width: 'min(370px, calc(100vw - 40px))',
+      height: 'min(540px, calc(100vh - 110px))',
+      marginBottom: 12,
+      background: v('panel-bg'),
+      borderRadius: v('radius'),
+      boxShadow: v('shadow'),
+      border,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '12px 14px',
+      background: `var(--cw-header-bg, ${accent})`,
+      color: `var(--cw-header-text, ${accentContrast})`,
+      borderBottom: 'var(--cw-header-border, none)',
+    },
+    title: { margin: 0, fontSize: 15, fontWeight: 600, fontFamily: 'var(--cw-title-font, inherit)' },
+    close: {
+      background: 'transparent',
+      border: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      fontSize: 20,
+      lineHeight: 1,
+      padding: 4,
+    },
+    list: {
+      flex: 1,
+      overflowY: 'auto',
+      padding: 14,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+      background: v('list-bg'),
+      margin: 0,
+      listStyle: 'none',
+    },
+    bubble: {
+      maxWidth: '85%',
+      padding: '8px 12px',
+      borderRadius: v('radius'),
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
+    },
+    user: { alignSelf: 'flex-end', background: accent, color: accentContrast, borderBottomRightRadius: 4 },
+    assistant: {
+      alignSelf: 'flex-start',
+      background: v('bubble-bg'),
+      color: v('bubble-text'),
+      border,
+      borderBottomLeftRadius: 4,
+    },
+    status: { alignSelf: 'flex-start', color: v('muted'), fontStyle: 'italic', padding: '0 4px' },
+    error: {
+      margin: '0 14px 8px',
+      padding: '8px 10px',
+      borderRadius: v('radius-sm'),
+      background: v('error-bg'),
+      color: v('error-text'),
+      fontSize: 13,
+    },
+    form: { display: 'flex', gap: 8, padding: 10, borderTop: border, background: v('panel-bg') },
+    input: {
+      flex: 1,
+      resize: 'none',
+      border: `1px solid ${v('input-border')}`,
+      borderRadius: v('radius-sm'),
+      padding: '8px 10px',
+      font: 'inherit',
+      color: 'inherit',
+      background: v('input-bg'),
+      minHeight: 38,
+      maxHeight: 120,
+      boxSizing: 'border-box',
+    },
+    send: {
+      border: 'none',
+      borderRadius: v('radius-sm'),
+      background: accent,
+      color: accentContrast,
+      padding: '0 14px',
+      font: 'inherit',
+      fontWeight: 600,
+      cursor: 'pointer',
+    },
+    srOnly: {
+      position: 'absolute',
+      width: 1,
+      height: 1,
+      padding: 0,
+      margin: -1,
+      overflow: 'hidden',
+      clip: 'rect(0,0,0,0)',
+      whiteSpace: 'nowrap',
+      border: 0,
+    },
+  } satisfies Record<string, CSSProperties>;
+}
+
+const STYLES: Record<ChatWidgetVariant, ReturnType<typeof createStyles>> = {
+  light: createStyles(LIGHT),
+  dark: createStyles(DARK),
+};
 
 export function ChatWidget({
   endpoint,
   headers,
-  placeholder = 'Type a message…',
-  title = 'Chat',
+  placeholder = 'Ask me anything…',
+  title = 'Chat with me',
   welcomeMessage,
   onError,
   defaultOpen = false,
+  variant = 'light',
+  className,
+  style,
+  toggleIcon,
 }: ChatWidgetProps) {
+  const styles = STYLES[variant] ?? STYLES.light;
   const [open, setOpen] = useState(defaultOpen);
   const [input, setInput] = useState('');
   const { messages, loading, error, send } = useChat({ endpoint, headers, onError });
@@ -207,7 +291,7 @@ export function ChatWidget({
   const canSend = input.trim().length > 0 && !loading;
 
   return (
-    <div style={styles.root} className="tr-chat-widget">
+    <div style={{ ...styles.root, ...style }} className={className ? `tr-chat-widget ${className}` : 'tr-chat-widget'}>
       {open && (
         <div
           id={panelId}
@@ -297,6 +381,8 @@ export function ChatWidget({
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
+        ) : toggleIcon !== undefined ? (
+          toggleIcon
         ) : (
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
             <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
