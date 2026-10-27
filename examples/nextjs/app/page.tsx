@@ -1,5 +1,5 @@
-import { ChatWidget } from '@tommaso-rossino/chat-widget';
-import '@tommaso-rossino/chat-widget/styles';
+import { ChatWidget } from '@trossino/chat-widget';
+import '@trossino/chat-widget/styles';
 
 export default function Page() {
   return (

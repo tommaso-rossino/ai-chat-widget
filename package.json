@@ -1,5 +1,5 @@
 {
-  "name": "@tommaso-rossino/chat-widget",
+  "name": "@trossino/chat-widget",
   "version": "0.1.0",
   "description": "Batteries-included React chat widget with optional server-side handler for AI backends (Anthropic, OpenAI).",
   "license": "MIT",

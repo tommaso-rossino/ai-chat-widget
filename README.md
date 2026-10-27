@@ -1,4 +1,4 @@
-# @tommaso-rossino/chat-widget
+# @trossino/chat-widget
 
 Batteries-included React chat widget, plus an optional framework-agnostic server handler for Anthropic and OpenAI.
 
@@ -11,7 +11,7 @@ Batteries-included React chat widget, plus an optional framework-agnostic server
 ## Install
 
 ```bash
-npm i @tommaso-rossino/chat-widget
+npm i @trossino/chat-widget
 ```
 
 Peer dependencies: `react` and `react-dom` 18 or 19.
@@ -19,7 +19,7 @@ Peer dependencies: `react` and `react-dom` 18 or 19.
 ## Client only (your own endpoint)
 
 ```tsx
-import { ChatWidget } from '@tommaso-rossino/chat-widget';
+import { ChatWidget } from '@trossino/chat-widget';
 
 export default function App() {
   return <ChatWidget endpoint="/api/my-chat" title="Support" welcomeMessage="Hi! How can I help?" />;
@@ -34,7 +34,7 @@ Your endpoint receives `POST { messages: Array<{ role: 'user' | 'assistant', con
 Want your own UI? Use the hook directly:
 
 ```tsx
-import { useChat } from '@tommaso-rossino/chat-widget';
+import { useChat } from '@trossino/chat-widget';
 
 const { messages, loading, error, send, stop, reset } = useChat({ endpoint: '/api/chat' });
 ```
@@ -44,7 +44,7 @@ const { messages, loading, error, send, stop, reset } = useChat({ endpoint: '/ap
 `app/api/chat/route.ts`:
 
 ```ts
-import { createChatHandler } from '@tommaso-rossino/chat-widget/server';
+import { createChatHandler } from '@trossino/chat-widget/server';
 
 export const POST = createChatHandler({
   provider: 'anthropic', // or 'openai'
@@ -58,7 +58,7 @@ export const POST = createChatHandler({
 `app/page.tsx`:
 
 ```tsx
-import { ChatWidget } from '@tommaso-rossino/chat-widget';
+import { ChatWidget } from '@trossino/chat-widget';
 
 export default function Page() {
   return <ChatWidget endpoint="/api/chat" title="Ask me anything" />;
@@ -102,7 +102,7 @@ Responses: `200` with `{ reply }` or an SSE stream, `400` for an invalid body, `
 Everything is inline-styled. For extras inline styles can't express (focus rings, hover, entry animation that respects `prefers-reduced-motion`):
 
 ```ts
-import '@tommaso-rossino/chat-widget/styles';
+import '@trossino/chat-widget/styles';
 ```
 
 ## Notes
