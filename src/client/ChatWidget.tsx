@@ -90,8 +90,6 @@ function createStyles(theme: Theme) {
   return {
     root: {
       position: 'fixed',
-      right: 20,
-      bottom: 20,
       zIndex: 2147483000,
       fontFamily: v('font'),
       fontSize: 14,
@@ -115,8 +113,6 @@ function createStyles(theme: Theme) {
       padding: 0,
     },
     panel: {
-      width: 'min(370px, calc(100vw - 40px))',
-      height: 'min(540px, calc(100vh - 110px))',
       marginBottom: 12,
       background: v('panel-bg'),
       borderRadius: v('radius'),
@@ -187,12 +183,12 @@ function createStyles(theme: Theme) {
       border: `1px solid ${v('input-border')}`,
       borderRadius: v('radius-sm'),
       padding: '8px 10px',
-      font: 'inherit',
       color: 'inherit',
       background: v('input-bg'),
       minHeight: 38,
       maxHeight: 120,
       boxSizing: 'border-box',
+      touchAction: 'manipulation',
     },
     send: {
       border: 'none',
@@ -203,6 +199,7 @@ function createStyles(theme: Theme) {
       font: 'inherit',
       fontWeight: 600,
       cursor: 'pointer',
+      touchAction: 'manipulation',
     },
     srOnly: {
       position: 'absolute',
@@ -217,6 +214,45 @@ function createStyles(theme: Theme) {
     },
   } satisfies Record<string, CSSProperties>;
 }
+
+/**
+ * Rules inline styles can't express: media queries and the `dvh` -> `vh` fallback.
+ * Inputs render at 16px on small screens so iOS/Android don't auto-zoom on focus.
+ * Panel size is static (never derived from focus or keyboard state) and always fits the viewport.
+ */
+const CSS = `
+.tr-chat-widget {
+  right: 20px;
+  bottom: 20px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.tr-chat-panel {
+  width: min(380px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  height: 560px;
+  max-height: min(560px, calc(100vh - 90px));
+  max-height: min(560px, calc(100dvh - 90px));
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.tr-chat-panel,
+.tr-chat-panel * {
+  box-sizing: border-box;
+}
+.tr-chat-input {
+  font: inherit;
+}
+@media (max-width: 480px) {
+  .tr-chat-widget {
+    right: 12px;
+    bottom: 12px;
+  }
+  .tr-chat-widget .tr-chat-input {
+    font-size: 16px;
+  }
+}
+`;
 
 const STYLES: Record<ChatWidgetVariant, ReturnType<typeof createStyles>> = {
   light: createStyles(LIGHT),
@@ -292,6 +328,7 @@ export function ChatWidget({
 
   return (
     <div style={{ ...styles.root, ...style }} className={className ? `tr-chat-widget ${className}` : 'tr-chat-widget'}>
+      <style>{CSS}</style>
       {open && (
         <div
           id={panelId}
